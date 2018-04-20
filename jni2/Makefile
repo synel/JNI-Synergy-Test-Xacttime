@@ -1,4 +1,4 @@
-GCC = /opt/arm-2010q1/bin/arm-none-linux-gnueabi-gcc
+GCC = arm-linux-gnueabi-gcc
 OPT = -march=armv5te 
 all: synergy2416.c
 	$(GCC) $(OPT) -I./include -I/usr/lib/jvm/default-java/include/linux -I/usr/lib/jvm/default-java/include -shared synergy2416.c _fp.c _fphlp.c base64.c -o libsynergy2416.so 
