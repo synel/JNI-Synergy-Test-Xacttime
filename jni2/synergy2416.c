@@ -568,20 +568,12 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 	//strcat(fileName,".template");
 
 	templateDecoded=(unsigned char *)base64_decode(nativeTemplate,1404);
-	//	if(hlpSaveTemplateToFile(fileName, templateDecoded)){
 	if(hlpSetFpDataOne(badgeL,fingerNum,templateDecoded)){
-		//unlink(fileName);
 		free(templateDecoded);
 		return -100;
 	}
 	free(templateDecoded);
 	return 0;
-	//	}
-	//	else{
-	//		unlink(fileName);
-	//		free(templateDecoded);
-	//		return -110;
-	//	}
 }
 
 JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1GET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring badge, jint fingernum ){
