@@ -56,8 +56,8 @@ BOOL hlpSaveTemplateToFile(char* strTemplFileName, void* pTemplate);
 
 int hlpLoadFingersDB(char* fpath);
 int hlpGetFpDataOne(long nID,long FingerNum,unsigned char *str);
-int hlpSetFpDataOne(long nID, int FingerNum, unsigned char* decodedTemplate);
-int hlpLoadFpDataFile(char *nID,int FingerNum,char *FileName);
+int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate);
+int hlpLoadFpDataFile(char *nID,long FingerNum,char *FileName);
 DWORD * hlpIdIterator();
 
 #endif /*__FPHLP_H__*/

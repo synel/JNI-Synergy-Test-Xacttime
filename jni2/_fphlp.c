@@ -50,7 +50,7 @@ void hlpErrorPrint(int nError)
 		break;
 	}
 	
-	hlp_printf(str);
+	hlp_printf("%s",str);
 }
 
 /************************************************************************/
@@ -271,7 +271,7 @@ BOOL _load_database()
 		return FALSE;
 	lseek(h, 0, SEEK_SET);
 
-	hlp_printf("hlp: Loading database.");
+	hlp_printf("%s: hlp: Loading FPU database.",__func__);
 	for (i=0; i<gRegMax; i++)
 	{
 		read(h, &gMatchData[i], sizeof(FPINFO));
@@ -344,7 +344,7 @@ long hlpOpen(char* szLibSuffix, int nSensorType)
 	wVer = (WORD)SB_FP_GETVERSION(&dwReleaseDate, &dwLibCap);
 
 	gRegMax = dwLibCap;
-	hlp_printf("%s: gRegMax Capacity is %d\n",__func__,dwLibCap);
+	hlp_printf("%s: gRegMax Capacity is %lu\n",__func__,dwLibCap);
 	if(gIDs)
 	{
 		free(gIDs);
@@ -890,7 +890,7 @@ int hlpGetFpDataOne(long nID,long FingerNum,unsigned char *str)
 	memcpy(str,&gMatchData[nPos],sizeof(FPINFO));
 	return TRUE;
 }
-int hlpLoadFpDataFile(char *nID,int FingerNum,char *FileName)
+int hlpLoadFpDataFile(char *nID,long FingerNum,char *FileName)
 {
 	int vSize,nPos=0;
 	FILE *vFile;
@@ -917,9 +917,9 @@ int hlpLoadFpDataFile(char *nID,int FingerNum,char *FileName)
 	return TRUE;
 }
 
-int hlpSetFpDataOne(long nID, int FingerNum, unsigned char* decodedTemplate){
+int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
 	int nPos = 0;
-	BOOL bAdapted;
+	//BOOL bAdapted;
 	int nRet = 0;
 	nPos = hlpEnrollPrepare(nID, FingerNum, 0);
 	hlp_printf("hlpSetFpDataOne: nPos = %d\n",nPos);
@@ -933,5 +933,5 @@ int hlpSetFpDataOne(long nID, int FingerNum, unsigned char* decodedTemplate){
 	gMatchData[nPos].ID = (DWORD)nID;
 	_save_template(nPos);
 	_save_valid();
-	return 0;
+	return nRet;
 }

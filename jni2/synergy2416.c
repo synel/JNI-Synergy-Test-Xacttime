@@ -15,6 +15,7 @@
 #include "_precomp.h"
 #include "_fp.h"
 #include "_fphlp.h"
+#include "base64.h"
 #include <dirent.h>
 #include <jni.h>
 #include "com_synel_synergy_synergy2416_presentation_controller_FPU.h"
@@ -111,7 +112,7 @@ BOOL _capture_finger(int nMilliSecondTimeout)
 
 
 int _memory_setup(){
-	size_t free =getpagesize();
+	//size_t free =getpagesize();
 	//Obtain handle to physical memory
 	if ((fd = open ("/dev/mem", O_RDWR | O_SYNC) ) < 0) {
 		printf("Unable to open /dev/mem: %s\n", strerror(errno));
@@ -164,6 +165,15 @@ char* _ultostr(unsigned long num, char *str, int base)
 		num = num/base;
 	} while (num > 0);
 	return str;
+}
+
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+  JNIEnv* env;
+  if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_8) != JNI_OK)
+    return -1;
+
+  return JNI_VERSION_1_8;
 }
 
 JNIEXPORT void JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_REDON(JNIEnv * env, jclass class){
@@ -224,7 +234,6 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 	int nSensorType = CMOSTYPE_OV7648;
 	char *nativeString = "3k";
 	int nRet=0;//10k 3k CMOSTYPE_HV7131R CMOSTYPE_EB6048
-	int nPos = 0;
 	templateLocation = (char*)(*env)->GetStringUTFChars(env, JtemplateLoc, 0);
 	putenv("HOME=/root");
 	hlp_printf("%s: templateLocation is %s, nSensorType (%s,%d) \n",__func__,templateLocation,nativeString,nSensorType);
@@ -277,6 +286,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 		return -1;
 	}
 	hlpLoadFingersDB(templateLocation);
+	(*env)->ReleaseStringUTFChars(env, JtemplateLoc, templateLocation);  // release resources
 	//(*env)->ReleaseStringUTFChars(env, sensorLib, nativeString);
 	return nRet;
 }
@@ -295,12 +305,9 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
 	long badgeL = atol(nativeBadge);
 	DWORD ID;
-	long fingerN = (long)fingernum;
 	int step = 1;
+	long fingerNumber = (long)fingernum;
 	jboolean readerError = JNI_FALSE ;
-	//sprintf(fileName,"%s%d_%d",templateLocation,badgeL, fingerN );
-	//strcat(fileName,".template");
-	//hlp_printf("%s: template filename is %s\n",__func__,fileName);
 
 	jclass enrollObj = (*env)->GetObjectClass(env,enrollmentHandler);
 	jmethodID methodoFPR = (*env)->GetMethodID(env,enrollObj, "onFingerPrintRead", "(I)V");
@@ -320,7 +327,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 		hlpSearchID((long*)&ID);
 		ID =(DWORD) badgeL ;
 
-		if ((nRet = hlpEnrollPrepare(badgeL, fingernum, 0)) < 0)
+		if ((nRet = hlpEnrollPrepare(badgeL, fingerNumber, 0)) < 0)
 		{
 			readerError = JNI_TRUE;
 			return -109;
@@ -413,21 +420,12 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 	}
 
 
-	if((nRet = hlpEnrollEnd(badgeL, fingernum, 0)) < 0)
+	if ((nRet = hlpEnrollEnd(badgeL, fingerNumber, 0)) < 0)
 	{
 		readerError = JNI_TRUE;
 		return -103;
 	}
-	//  We do not use individual template file.
-	//	if(hlpSaveTemplateToFile(fileName, &gFeature))
-	//	{
-	//		return 0;
-	//	}
-	//	else
-	//	{
-	//		readerError = JNI_TRUE;
-	//		return -110;
-	//	}
+	return nRet;
 }
 
 JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1VALIDATE_1EMPLOYEE
@@ -437,8 +435,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
 	long badgeL = atol(nativeBadge);
 	int nRet=0;
-	DWORD ID, dwTotalTime = 0;
-	int i=0;
+	DWORD dwTotalTime = 0;
 	long fingerNumber = (long)fingernum;
 
 	if(isSpecialEnrolled!=0){
@@ -448,8 +445,6 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 			//empty fp template
 			return -101;
 		}
-
-		ID = (DWORD)badge;
 
 		if ((nRet = hlpCheckFingerNum(badgeL, fingerNumber)) < 0)
 		{
@@ -480,13 +475,14 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 }
 
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1DELETE_1TEMPLATE(JNIEnv *env, jclass jcls,jstring badge, jint fingerNum ){
-	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
+JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1DELETE_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingerNum ){
+	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	//static char fileName[35];
 	long badgeL = atol(nativeBadge);
 	long fingernum = (long)fingerNum;
 	long nRet = 0;
-	DWORD ID, confirm;
+	DWORD ID;
+       	(*env)->ReleaseStringUTFChars(env, jbadge, nativeBadge);  // release resources 
 	hlp_printf("%s: called \n",__func__);
 	if (hlpGetEnrollCount() == 0)
 	{
@@ -497,20 +493,11 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 		if((nRet = hlpDeleteID(badgeL))< 0){
 			return -111;//NO TEMPLATE FOR GIVEN USER
 		}
-		//		else{
-		//			sprintf(fileName,"rm %s%d_*",templateLocation,badgeL, fingerNum );
-		//			strcat(fileName,".template");
-		//			system(fileName);
-		//			return 0;
-		//		}
 	}
 	if ((nRet = hlpDelete(badgeL, fingernum)) < 0)
 	{
 		return -102;//NO TEMPLATE FOR GIVEN USER
 	}
-	//	sprintf(fileName,"rm %s%d_%d",templateLocation,badgeL, fingerNum );
-	//	strcat(fileName,".template");
-	//	system(fileName);
 	return 0;
 
 }
@@ -543,49 +530,49 @@ JNIEXPORT jobjectArray JNICALL Java_com_synel_synergy_synergy2416_presentation_c
 	free(badgeString);
 	return badges;
 }
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1GET_1BADGE_1STATUS(JNIEnv *env, jclass jcls,jstring badge, jint fingernum ){
-	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
+JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1GET_1BADGE_1STATUS(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
+	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	long badgeL = atol(nativeBadge);
 	long fingerNumber = (long)fingernum;
 	int nRet = 0;
-	hlp_printf("%s: badgeL is %d and fingerNumber is %d \n",__func__,badgeL,fingerNumber);
+       	(*env)->ReleaseStringUTFChars(env, jbadge, nativeBadge);  // release resources 
+	hlp_printf("%s: badgeL is %ld and fingerNumber is %ld \n",__func__,badgeL,fingerNumber);
 	if ((nRet = (int)hlpCheckFingerNum(badgeL, fingerNumber)) < 0){
 		return -102;
 	}
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1SET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring badge, jint fingernum, jstring template ){
+JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1SET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum, jstring jtemplate ){
 	//static char fileName[35];
-	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
-	const char *nativeTemplate = (*env)->GetStringUTFChars(env, template, 0);
+	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
+	const char *nativeTemplate = (*env)->GetStringUTFChars(env, jtemplate, 0);
 	long badgeL = atol(nativeBadge);
 	long fingerNum = (long)fingernum;
-	unsigned char * templateDecoded = malloc(sizeof(unsigned char)*1404);
-
-	// We do not use template file to store fp data, use the .dat file instead.
-	//sprintf(fileName,"%s%d_%d",templateLocation,badgeL, fingerNum );
-	//strcat(fileName,".template");
-
-	templateDecoded=(unsigned char *)base64_decode(nativeTemplate,1404);
+	unsigned char* templateDecoded=(unsigned char *)base64_decode(nativeTemplate);
+	(*env)->ReleaseStringUTFChars(env, jbadge, nativeBadge);  // release resources
 	if(hlpSetFpDataOne(badgeL,fingerNum,templateDecoded)){
-		free(templateDecoded);
+		(*env)->ReleaseStringUTFChars(env, jtemplate, nativeTemplate);  // release resources
 		return -100;
 	}
-	free(templateDecoded);
-	return 0;
+	else {
+		(*env)->ReleaseStringUTFChars(env, jtemplate, nativeTemplate);  // release resources
+		return 0;
+	}
 }
 
-JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1GET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring badge, jint fingernum ){
-	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
+JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1GET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
+	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	long badgeL = atol(nativeBadge);
 	long fingerNum = (long)fingernum;
-	char template[FPDATASIZE];
-
+	unsigned char* template = (unsigned char*)calloc(FPDATASIZE,sizeof(char));
+	(*env)->ReleaseStringUTFChars(env, jbadge, nativeBadge);  // release resources
 	if(hlpGetFpDataOne(badgeL, fingerNum, template)){
-		char * templateEncoded;
-		templateEncoded=(unsigned char *)base64_encode(template,1404);
-		return (*env)->NewStringUTF(env, templateEncoded);
+		char* templateEncoded=(char *)base64_encode((char*)template,FPDATASIZE);
+		free(template);
+		jstring jTemplate = (*env)->NewStringUTF(env, templateEncoded);
+		free(templateEncoded);
+		return jTemplate;
 	}
 	return (*env)->NewStringUTF(env, NULL);
 }
@@ -595,8 +582,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controlle
 
 JNIEXPORT jint JNICALL Java_com_synel_synergy_synergy2416_presentation_controller_FPU_FP_1IDENTIFY_1EMPLOYEE(JNIEnv *env,jclass jcls){
 	int nRet;
-	DWORD ID, FingerNum, dwTotalTime = 0,cap_time=0;
-	int i;
+	DWORD ID, FingerNum;
 
 	if (hlpGetEnrollCount() == 0)
 	{
