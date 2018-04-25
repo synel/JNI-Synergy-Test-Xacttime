@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Logger;
+import java.util.Random;
 
 import com.synel.synergy.synergy2416.presentation.api.FingerPrintEnrollmentHandler;
 
@@ -538,7 +539,16 @@ public final class FPU implements FingerPrintEnrollmentHandler, Runnable{
 				System.out.println(Template);
 				break;
 			case 6:
-				System.out.println("Set Template: " +FP_SET_TEMPLATE(stringChoice("Enter Employee Number:"), Integer.parseInt(stringChoice("Enter Finger Number:")), Template));
+				for (int i =100; i< 130; i++)
+				{
+					String empNbr = "101";
+					//int fingerNbr = 101;
+					int min =110, max=120;
+					Random randomNum = new Random();
+					int fingerNbr = min +randomNum.nextInt(max);
+					System.out.println("Set Template: " +FP_SET_TEMPLATE(empNbr, fingerNbr, Template));
+				}
+				//System.out.println("Set Template: " +FP_SET_TEMPLATE(stringChoice("Enter Employee Number:"), Integer.parseInt(stringChoice("Enter Finger Number:")), Template));
 				break;
 			case 7:
 				String [] badges = null;

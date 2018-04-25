@@ -918,14 +918,25 @@ int hlpLoadFpDataFile(char *nID,long FingerNum,char *FileName)
 }
 
 int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
-	int nPos = 0;
+    int nPos = 0;
 	//BOOL bAdapted;
 	int nRet = 0;
+	//check the size of the decodedtemplate, reject it if it does not math sizeof(FPINFO)
+	size_t size == 0;
+	if(decodedTemplate == NULL) {
+		return -2; //NULL
+	}
+	if (size == 0) {
+		size = strlen(decodedTemplate);
+	}
 	nPos = hlpEnrollPrepare(nID, FingerNum, 0);
-	hlp_printf("hlpSetFpDataOne: nPos = %d\n",nPos);
+	hlp_printf("hlpSetFpDataOne: nPos = %d, size = %u\n",nPos, size);
 	if(nPos < 0) {
 		//ErrorProc( nPos );
 		return -1;
+	}
+	if (size != sizeof(FPINFO)) {
+		return -3;
 	}
 	gValidFile[nPos] = 1; //finger badge
 	memcpy(&gMatchData[nPos],decodedTemplate, sizeof(FPINFO));
