@@ -922,12 +922,12 @@ int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
 	//BOOL bAdapted;
 	int nRet = 0;
 	//check the size of the decodedtemplate, reject it if it does not math sizeof(FPINFO)
-	size_t size == 0;
+	size_t size = 0;
 	if(decodedTemplate == NULL) {
 		return -2; //NULL
 	}
 	if (size == 0) {
-		size = strlen(decodedTemplate);
+		size = strlen((const char*)decodedTemplate);
 	}
 	nPos = hlpEnrollPrepare(nID, FingerNum, 0);
 	hlp_printf("hlpSetFpDataOne: nPos = %d, size = %u\n",nPos, size);
