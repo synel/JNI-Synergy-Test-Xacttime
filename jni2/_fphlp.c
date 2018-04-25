@@ -49,7 +49,7 @@ void hlpErrorPrint(int nError)
 	default:
 		break;
 	}
-	
+
 	hlp_printf("%s",str);
 }
 
@@ -68,7 +68,7 @@ DWORD* gIDs = NULL;
 int _get_enroll_count()
 {
 	int i,nCount = 0;
-	
+
 	for (i=0; i<gRegMax; i++)
 	{
 		if(gValidFile[i] != 0)
@@ -80,7 +80,7 @@ int _get_enroll_count()
 void _delete_all()
 {
 	int i;
-	
+
 	for (i=0; i<gRegMax; i++)
 	{
 		gValidFile[i] = 0;
@@ -101,7 +101,7 @@ int _get_empty_pos()
 		if (gValidFile[i] == 0)
 			break;
 	}
-	
+
 	return i;
 }
 
@@ -110,7 +110,7 @@ int _get_pos(long nID, long nFingerNum)
 	int i;
 
 	if (nFingerNum < 0 || nFingerNum > 255) return gRegMax;
-	
+
 	for (i=0; i<gRegMax; i++)
 	{
 		if (gValidFile[i] != 0 && gMatchData[i].ID == (DWORD)nID && gMatchData[i].FingerNum == nFingerNum)
@@ -148,16 +148,16 @@ int _compare( const void *arg1, const void *arg2 )
 
 DWORD * _gId_Iterator()
 {
-        int i,j = 0;
+	int i,j = 0;
 
-        for (i=0; i<gRegMax; i++)
-        {
-                if (gValidFile[i] != 0){
-                        gIDs[j++] = gMatchData[i].ID;
-                        //hlp_printf("ID Found:%d\n", gMatchData[i].ID);
-                }
-        }
-        return gIDs;
+	for (i=0; i<gRegMax; i++)
+	{
+		if (gValidFile[i] != 0){
+			gIDs[j++] = gMatchData[i].ID;
+			//hlp_printf("ID Found:%d\n", gMatchData[i].ID);
+		}
+	}
+	return gIDs;
 }
 
 DWORD _searchID()
@@ -169,7 +169,7 @@ DWORD _searchID()
 
 	if (0 == ids[0])
 		return 0;
-    j = sizeof(ids)/sizeof(DWORD);
+	j = sizeof(ids)/sizeof(DWORD);
 	qsort(ids, j, sizeof(DWORD), _compare);
 
 	dwRet = ids[0]+1;
@@ -187,24 +187,24 @@ DWORD _searchFN(long nID)
 {
 	int i,j = _get_posID(nID);
 	DWORD dwRet;
-	
+
 	if (j==0)
 		return -1;
-	
+
 	for (i=0; i<j; i++)
 		gIDFingers[i] = (DWORD)gMatchData[gIDFingers[i]].FingerNum;
 
 	qsort(gIDFingers, j, sizeof(DWORD), _compare);
-	
+
 	dwRet = gIDFingers[0]+1;
 	for (i=1; i<j; i++)
 	{
 		if (dwRet != (DWORD)gIDFingers[i])
 			break;
-		
+
 		dwRet ++;
 	}
-	
+
 	return dwRet;
 }
 
@@ -215,24 +215,24 @@ void _settings_get(int nSensorType, DWORD* pdwMechanical, DWORD* pdwExpose)
 {
 	int h;
 	int dat[3];
-	
+
 	*pdwMechanical = 0;
 	*pdwExpose = 0;
-	
+
 	h = open(SETTINGS_FILE, O_BINARY | O_RDONLY);
 	if (h<0)
 		return;
 	lseek(h, 0, SEEK_SET);
 	if(read(h, dat, 12) != 12 ||
-		dat[0] != nSensorType)
+			dat[0] != nSensorType)
 	{
 		close(h);
 		return;
 	}
-	
+
 	*pdwMechanical = dat[1];
 	*pdwExpose = dat[2];
-	
+
 	close(h);
 }
 
@@ -240,13 +240,13 @@ void _settings_set(int nSensorType, DWORD dwMechanical, DWORD dwExpose)
 {
 	int h;
 	int dat[3] = {nSensorType, dwMechanical, dwExpose};
-	
+
 	h = open(SETTINGS_FILE, O_BINARY | O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
 	if (h<0)
 		return;
 	lseek(h, 0, SEEK_SET);
 	write(h, dat, 12);
-	
+
 	close(h);
 }
 
@@ -291,7 +291,7 @@ BOOL _load_database()
 void _save_template(int nPos)
 {
 	int h;
-	
+
 	h = open(MATCH_DATA_FILE, O_BINARY | O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
 	if (h<0)
 		return;
@@ -471,7 +471,7 @@ long hlpCheckManager(long nID, long nFingerNum)
 
 	if (!gMatchData[nPos].Manager)
 		return HLP_ERR_ID;
-	
+
 	return 0;
 }
 
@@ -522,17 +522,17 @@ long hlpCheckAdjustSensor()
 long hlpEnrollPrepare(long nID, long nFingerNum, long Manager) 
 {
 	int nPos;
-	
+
 	if (nFingerNum < 0 || nFingerNum > 255) return HLP_ERR_ID;
 	if (Manager < 0 || Manager > 255) return HLP_ERR_ID;
-	
+
 	nPos = _get_pos(nID, nFingerNum);
 	hlp_printf("hlpEnrollPrepare: nPos = %d\n",nPos);
 	if (nPos == gRegMax) {//was nPos!=gRegMax
 		nPos = _get_empty_pos();
 		hlp_printf("hlpEnrollPrepare: get Empty_Pos = %d\n",nPos);
 		if (nPos == gRegMax)
-		return HLP_ERR_OVER;
+			return HLP_ERR_OVER;
 	}
 	return nPos;
 }
@@ -540,7 +540,7 @@ long hlpEnrollPrepare(long nID, long nFingerNum, long Manager)
 long hlpEnrollEnd(long nID, long nFingerNum, long Manager) 
 {
 	int nRet, nPos;
-	
+
 	nRet = SB_FP_ENROLLMERGE(&gFeature);
 	hlp_printf("hlpEnrollEnd: nRet = %d\n",nRet);
 	if (nRet < 0)
@@ -578,7 +578,7 @@ long hlpIdentify(long* pnID, long* pnFingerNum)
 	nRet = SB_FP_IDENTIFYIMAGE256(&bAdapted);
 	if (nRet < 0)
 		return nRet;
-	
+
 	*pnID = gMatchData[nRet].ID;
 	*pnFingerNum = gMatchData[nRet].FingerNum;
 
@@ -591,7 +591,7 @@ long hlpVerify(long nID, long nFingerNum)
 {
 	int nRet, nPos;
 	BOOL bAdapted;
-	
+
 	nPos = _get_pos(nID, nFingerNum);
 	if (nPos == gRegMax)
 		return HLP_ERR_ID;
@@ -609,7 +609,7 @@ long hlpVerify(long nID, long nFingerNum)
 long hlpTemplateGetFromImage(void* pTemplate) 
 {
 	int nRet;
-	
+
 	nRet = SB_FP_PROCESSIMAGE256(&gFeature);
 	if (nRet < 0)
 		return nRet;
@@ -626,12 +626,23 @@ long hlpTemplateIdentify(long* pnID, long* pnFingerNum, void* pTemplate)
 
 	*pnID = 0;
 	*pnFingerNum = 0;
-	
+
+	size_t size = 0;
+	if(pTemplate == NULL) {
+		return -2; //NULL
+	}
+	if (size == 0) {
+		size = strlen((const char*)pTemplate);
+	}
+	if (size != sizeof(FPINFO)) {
+		return -3;
+	}
+
 	memcpy(&gFeature, pTemplate, sizeof(FPINFO));
 	nRet = SB_FP_IDENTIFYFPDATA(&gFeature, &bAdapted);
 	if (nRet < 0)
 		return nRet;
-	
+
 	*pnID = gMatchData[nRet].ID;
 	*pnFingerNum = gMatchData[nRet].FingerNum;
 	if(bAdapted) _save_template(nRet);
@@ -643,18 +654,29 @@ long hlpTemplateVerify(long nID, long nFingerNum, void* pTemplate)
 {
 	int nRet, nPos;
 	BOOL bAdapted;
-	
+
+	size_t size = 0;
+	if(pTemplate == NULL) {
+		return -2; //NULL
+	}
+	if (size == 0) {
+		size = strlen((const char*)pTemplate);
+	}
+	if (size != sizeof(FPINFO)) {
+		return -3;
+	}
+
 	nPos = _get_pos(nID, nFingerNum);
 	if (nPos == gRegMax)
 		return HLP_ERR_ID;
-	
+
 	memcpy(&gFeature, pTemplate, sizeof(FPINFO));
 	nRet = SB_FP_VERIFYFPDATA(&gFeature, nPos, &bAdapted);
 	if (nRet < 0)
 		return nRet;
-	
+
 	if(bAdapted) _save_template(nPos);
-	
+
 	return 0;
 }
 
@@ -733,7 +755,7 @@ void FP_BITMAP_INIT(FP_BITMAP* pfp_bmp, int cx, int cy)
 	pfp_bmp->bmfHdr.bfReserved1 = 0;
 	pfp_bmp->bmfHdr.bfReserved2 = 0;
 	pfp_bmp->bmfHdr.bfOffBits = sizeof(FP_BITMAP);
-	
+
 	pfp_bmp->bmInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	pfp_bmp->bmInfo.bmiHeader.biWidth = cx;
 	pfp_bmp->bmInfo.bmiHeader.biHeight	= -cy;
@@ -745,7 +767,7 @@ void FP_BITMAP_INIT(FP_BITMAP* pfp_bmp, int cx, int cy)
 	pfp_bmp->bmInfo.bmiHeader.biYPelsPerMeter = 0;
 	pfp_bmp->bmInfo.bmiHeader.biClrUsed = 0;
 	pfp_bmp->bmInfo.bmiHeader.biClrImportant = 0;
-	
+
 	pals = pfp_bmp->bmInfo.bmiColors;
 	for (i = 0; i < 256; i++) {
 		pals[i].rgbBlue = i;
@@ -767,12 +789,12 @@ BOOL hlpSaveImageToFile(char* strImageFileName, void* pImage, int cx, int cy)
 		return FALSE;
 	lseek(h, 0, SEEK_SET);
 	if(write(h, &fp_bmp, sizeof(FP_BITMAP)) != sizeof(FP_BITMAP) ||
-		write(h, pImage, cx*cy) != cx*cy)
+			write(h, pImage, cx*cy) != cx*cy)
 	{
 		close(h);
 		return FALSE;
 	}
-	
+
 	close(h);
 	return TRUE;
 }
@@ -783,7 +805,7 @@ BOOL hlpSaveImageToFile(char* strImageFileName, void* pImage, int cx, int cy)
 BOOL hlpLoadTemplateFromFile(char* strTemplFileName, void* pTemplate) 
 {
 	int h;
-	
+
 	h = open(strTemplFileName, O_BINARY | O_RDONLY);
 	if (h<0)
 		return FALSE;
@@ -793,7 +815,7 @@ BOOL hlpLoadTemplateFromFile(char* strTemplFileName, void* pTemplate)
 		close(h);
 		return FALSE;
 	}
-	
+
 	close(h);
 	memcpy(pTemplate, &gFeature, sizeof(FPINFO));
 	return TRUE;
@@ -802,7 +824,7 @@ BOOL hlpLoadTemplateFromFile(char* strTemplFileName, void* pTemplate)
 int hlpLoadCompressedTemplateFromFile(char* strCompressedTemplFileName, void* pTemplate) 
 {
 	int h, len;
-	
+
 	h = open(strCompressedTemplFileName, O_BINARY | O_RDONLY);
 	if (h<0)
 		return 0;
@@ -812,7 +834,7 @@ int hlpLoadCompressedTemplateFromFile(char* strCompressedTemplFileName, void* pT
 		close(h);
 		return 0;
 	}
-	
+
 	close(h);
 	memcpy(pTemplate, &gFeature, sizeof(FPINFO));
 	return len;
@@ -821,7 +843,7 @@ int hlpLoadCompressedTemplateFromFile(char* strCompressedTemplFileName, void* pT
 BOOL hlpSaveTemplateToFile(char* strTemplFileName, void* pTemplate) 
 {
 	int h;
-	
+
 	h = open(strTemplFileName, O_BINARY | O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
 	if (h<0)
 		return FALSE;
@@ -851,27 +873,27 @@ int hlpLoadFingersDB(char* fpath)
 
 	db = opendir(fpath);
 	if (db == NULL)
-	        return -1;
+		return -1;
 	memset(filename, 0, 64);
 	while ((p = readdir(db))) {
-	        if ((strcmp(p->d_name, ".") == 0) || (strcmp(p->d_name, "..") == 0))
-	                continue;
-	        else {
-	                if (strstr(p->d_name, ".template")) {
-	                        buf = p->d_name;
-	                        len = strcspn(buf, "_");
-	                        memset(tmp1, 0, sizeof(tmp1));
-	                        strncpy(tmp1, buf, len);
-	                        buf += len;
-	                        buf++;
-	                        len = strcspn(buf, ".");
-	                        memset(tmp2, 0, sizeof(tmp2));
-	                        strncpy(tmp2, buf, len);
-	                        sprintf(filename, "%s%s", fpath, p->d_name);
-	                        hlpLoadFpDataFile(tmp1, atoi(tmp2), filename);
-	                }
-	        }
-	        memset(filename, 0, 64);
+		if ((strcmp(p->d_name, ".") == 0) || (strcmp(p->d_name, "..") == 0))
+			continue;
+		else {
+			if (strstr(p->d_name, ".template")) {
+				buf = p->d_name;
+				len = strcspn(buf, "_");
+				memset(tmp1, 0, sizeof(tmp1));
+				strncpy(tmp1, buf, len);
+				buf += len;
+				buf++;
+				len = strcspn(buf, ".");
+				memset(tmp2, 0, sizeof(tmp2));
+				strncpy(tmp2, buf, len);
+				sprintf(filename, "%s%s", fpath, p->d_name);
+				hlpLoadFpDataFile(tmp1, atoi(tmp2), filename);
+			}
+		}
+		memset(filename, 0, 64);
 	}
 	closedir(db);
 	return 0;
@@ -909,7 +931,7 @@ int hlpLoadFpDataFile(char *nID,long FingerNum,char *FileName)
 		return FALSE;
 	}
 
-	gValidFile[nPos] = 1; //finger badge
+	gValidFile[nPos] = 1; //finger badge valid
 	memcpy(&gMatchData[nPos],gFpdataBuff, sizeof(FPINFO));
 	gMatchData[nPos].FingerNum = (BYTE)(DWORD)FingerNum;
 	gMatchData[nPos].ID=(DWORD)(atol(nID));
@@ -918,7 +940,7 @@ int hlpLoadFpDataFile(char *nID,long FingerNum,char *FileName)
 }
 
 int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
-    int nPos = 0;
+	int nPos = 0;
 	//BOOL bAdapted;
 	int nRet = 0;
 	//check the size of the decodedtemplate, reject it if it does not math sizeof(FPINFO)
@@ -938,7 +960,7 @@ int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
 	if (size != sizeof(FPINFO)) {
 		return -3;
 	}
-	gValidFile[nPos] = 1; //finger badge
+	gValidFile[nPos] = 1; //finger badge valid
 	memcpy(&gMatchData[nPos],decodedTemplate, sizeof(FPINFO));
 	gMatchData[nPos].FingerNum = (BYTE)(DWORD)FingerNum;
 	gMatchData[nPos].ID = (DWORD)nID;
