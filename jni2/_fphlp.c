@@ -632,9 +632,11 @@ long hlpTemplateIdentify(long* pnID, long* pnFingerNum, void* pTemplate)
 		return -2; //NULL
 	}
 	if (size == 0) {
-		size = strlen((const char*)pTemplate);
+		size = sizeof((char*)pTemplate);
+		//hlp_printf("hlpTemplateIdentify: size = %u\n",size);
 	}
-	if (size != sizeof(FPINFO)) {
+	if (size == 0) {
+		//hlp_printf("hlpTemplateIdentify: size = %u\n",size);
 		return -3;
 	}
 
@@ -660,9 +662,10 @@ long hlpTemplateVerify(long nID, long nFingerNum, void* pTemplate)
 		return -2; //NULL
 	}
 	if (size == 0) {
-		size = strlen((const char*)pTemplate);
+		size = sizeof((char*)pTemplate);
+		//hlp_printf("hlpTemplateVerify: size = %u\n",size);
 	}
-	if (size != sizeof(FPINFO)) {
+	if (size == 0) {
 		return -3;
 	}
 
@@ -949,7 +952,7 @@ int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
 		return -2; //NULL
 	}
 	if (size == 0) {
-		size = strlen((const char*)decodedTemplate);
+		size = sizeof((char*)decodedTemplate);
 	}
 	nPos = hlpEnrollPrepare(nID, FingerNum, 0);
 	hlp_printf("hlpSetFpDataOne: nPos = %d, size = %u\n",nPos, size);
@@ -957,8 +960,8 @@ int hlpSetFpDataOne(long nID, long FingerNum, unsigned char* decodedTemplate){
 		//ErrorProc( nPos );
 		return -1;
 	}
-	if (size != sizeof(FPINFO)) {
-		return -3;
+	if (size == 0) {
+			hlp_printf("hlpSetFpDataOne: size == %u\n",size);
 	}
 	gValidFile[nPos] = 1; //finger badge valid
 	memcpy(&gMatchData[nPos],decodedTemplate, sizeof(FPINFO));

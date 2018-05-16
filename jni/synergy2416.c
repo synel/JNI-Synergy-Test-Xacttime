@@ -17,8 +17,8 @@
 #include "_fphlp.h"
 #include <dirent.h>
 #include <jni.h>
-#include "com_synel_synergy_synergy2416_presentation_controller_FPU.h"
-#include "com_synel_synergy_synergy2416_presentation_controller_FPU_Light.h"
+#include "com_synel_synergy_synergyX_presentation_controller_FPU.h"
+#include "com_synel_synergy_synergyX_presentation_controller_FPU_Light.h"
 /*
  * nPos is the array index in the fp memory
  * badgenum is the symbol in the fp data structure(FPINFO).
