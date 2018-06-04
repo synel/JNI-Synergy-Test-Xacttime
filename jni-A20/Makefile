@@ -1,8 +1,8 @@
 PLATFORM = am335x
 ifeq ($(PLATFORM),	am335x)
 CCSHARED = -shared -ldl #--sysroot=/opt/ti-sdk-am335x-evm/linux-devkit/sysroots/armv7ahf-vfp-neon-3.2-oe-linux-gnueabi
-TOOLCHAIN = /opt/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin
-#TOOLCHAIN = /usr/local/ti-sdk-am335x-evm/linux-devkit/sysroots/i686-arago-linux/usr/bin
+#TOOLCHAIN = /opt/gcc-linaro-6.4.1-2017.11-x86_64_arm-linux-gnueabihf/bin
+TOOLCHAIN = /usr/local/ti-sdk-am335x-evm/linux-devkit/sysroots/i686-arago-linux/usr/bin
 #/opt/ti-sdk-am335x-evm/linux-devkit/sysroots/i686-arago-linux/usr/bin
 CROSS_COMPILE = $(TOOLCHAIN)/arm-linux-gnueabihf-
 #CROSS_COMPILE = /usr/bin/arm-linux-gnueabihf-

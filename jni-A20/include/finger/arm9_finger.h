@@ -73,6 +73,7 @@ int read_s70_finger(int port_number);
 
 int finger_probe();
 int SetFingerProbeMode(int mode);
+DWORD * hlpIdIterator();
 
 #define CMOSTYPE_OP5 0x33
 

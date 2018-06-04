@@ -28,6 +28,7 @@
 #define APP_CAP_TIMEOUT 500
 #define JNI_FALSE  0
 #define JNI_TRUE   1
+#define FP_LIB_PATHNAME "/usr/lib/fpu/fp.so"
 
 struct timeval tv1,tv2;
 static char templateLocation[128];
@@ -78,7 +79,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 		return -1;
 	}
 	DLOGI("JNI_VERSION: %d\n",JNI_VERSION_1_8);
-	strcpy(FP_LIB_PATH, "/usr/lib/fpu/fp.so");
+	strcpy(FP_LIB_PATH, FP_LIB_PATHNAME);
 	_initGpio();
 	return JNI_VERSION_1_8;
 }
@@ -149,7 +150,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	} while ( ret != 1);
 	//this is to load all fingers to memory, one can also choose load it on demand for finer finger management
 	int retcode = LoadAllFinger(templateLocation);
-	DLOGI("loadAllfinger: %d",retcode);
+	DLOGI("loadAllfinger: %d ret value : %d\n",retcode, ret);
 	return ret;
 }
 
@@ -302,7 +303,6 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 		return hlpDelete(nID, fingernum);
 	}
 
-
 	//	hlpSearchID((long*)&ID);
 	//	if( fingernum < 0){
 	//		if((nRet = hlpDeleteID(badgeL))< 0){
@@ -345,6 +345,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_synel_synergy_synergyX_presentation_cont
 	free(badgeString);
 	return badges;
 }
+
 JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1BADGE_1STATUS(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	long badgeL = atol(nativeBadge);
@@ -392,6 +393,7 @@ JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergyX_presentation_controlle
 	}
 	return (*env)->NewStringUTF(env, NULL);
 }
+
 JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1ENROLECOUNT(JNIEnv *env, jclass jcls){
 	return (int)hlpGetEnrollCount();
 }

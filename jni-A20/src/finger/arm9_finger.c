@@ -682,7 +682,7 @@ void write_bitmap(char *imgout, unsigned char *buffer, int nWidth, int nHeight)
 	// Offset to actual bits is after palette
 
 	bfh.bfOffBits = 14 + sizeof(BITMAPINFOHEADER)
-				+ m_lpBMIH->biClrUsed * sizeof(RGBQUAD);
+						+ m_lpBMIH->biClrUsed * sizeof(RGBQUAD);
 
 	//Write the results
 	//Notice: according to bmp file format,BITMAPFILEHEADER's size should be 14 bytes,but here it'size
@@ -774,7 +774,7 @@ BOOL hlpSaveImageToFile(char* strImageFileName, void* pImage, int nHeight, int n
 	// Offset to actual bits is after palette
 
 	bfh.bfOffBits = 14 + sizeof(BITMAPINFOHEADER)
-            		+ m_lpBMIH->biClrUsed * sizeof(RGBQUAD);
+            				+ m_lpBMIH->biClrUsed * sizeof(RGBQUAD);
 
 	//Write the results
 	//Notice: according to bmp file format,BITMAPFILEHEADER's size should be 14 bytes,but here it'size
@@ -881,7 +881,6 @@ int InitFp(int nSensorType,char *fp_path)
 		return FALSE;
 	}
 #endif
-	printf("%s,%d,%s\n",__func__, nSensorType,fp_path);
 	SetFingerCallBack(&fingercallback);
 	printf("%s,%d,%s\n",__func__, nSensorType,fp_path);
 	if(fp_path == NULL)
@@ -899,75 +898,81 @@ int InitFp(int nSensorType,char *fp_path)
 	}
 
 #if 1
-if(gSensorType == CMOSTYPE_OP5)
-{
-	nRet = sfm_InitFp(1, 115200);
-	if(nRet == TRUE)
+	if(gSensorType == CMOSTYPE_OP5)
 	{
-		fp_enable = 1;
-		return TRUE;
-	}
+		nRet = sfm_InitFp(1, 115200);
+		if(nRet == TRUE)
+		{
+			fp_enable = 1;
+			return TRUE;
+		}
 
-	return FALSE;
-}
+		return FALSE;
+	}
 #endif
-if(gSensorType==9){
-	if(PROBEMODE)
-		finger_power_off();
-}
-// load fp.so
-vhfp = dlopen( fp_path, RTLD_NOW );
-if( vhfp == NULL )
-{
-	return HLP_ERR_CANNOT_LOAD_LIB;
-}
+	if(gSensorType==9){
+		if(PROBEMODE)
+			finger_power_off();
+	}
+	// load fp.so
+	hlp_printf("%d: fp_path is %s\n",__LINE__,fp_path);
+	vhfp = dlopen( fp_path, RTLD_NOW | RTLD_GLOBAL );
+	if (!vhfp) { fprintf(stderr, "dlopen failed: %s\n", dlerror());
+	exit(EXIT_FAILURE);
+	};
+	//if( vhfp == NULL )
+	//{
+	//	hlp_printf(" %d: error cannot load lib!!!!!!\n",__LINE__);
+	//	return HLP_ERR_CANNOT_LOAD_LIB;
+	//}
 
 #ifdef _ARM_A23
-fnSB_fp = (pfnENGINE)dlsym( vhfp, "BB_fp" );
+	fnSB_fp = (pfnENGINE)dlsym( vhfp, "BB_fp" );
 #else
-fnSB_fp = (pfnENGINE)dlsym( vhfp, "SB_fp" );
+	fnSB_fp = (pfnENGINE)dlsym( vhfp, "SB_fp" );
 #endif
-if( fnSB_fp == NULL )
-{
-	if(vhfp!=NULL)
-		dlclose(vhfp);
-	return HLP_ERR_CANNOT_LOAD_LIB;
-}
+	if( fnSB_fp == NULL )
+	{
+		hlp_printf(" %d: error cannot load lib!!!!!!\n",__LINE__);
+		if(vhfp!=NULL)
+			dlclose(vhfp);
+		return HLP_ERR_CANNOT_LOAD_LIB;
+	}
 
-// check version
-wVer = (WORD)SB_FP_GETVERSION(&dwReleaseDate, &dwLibCap);
+	// check version
+	wVer = (WORD)SB_FP_GETVERSION(&dwReleaseDate, &dwLibCap);
 
-gRegMax = dwLibCap;
-if(gIDs != NULL)
-{
-	free(gIDs);
-	gIDs = NULL;
-}
-gIDs = (DWORD*)malloc(gRegMax * sizeof(DWORD));
-if(gIDs == NULL)
-{
-	return HLP_ERR_CANNOT_LOAD_LIB;
-}
+	gRegMax = dwLibCap;
+	if(gIDs != NULL)
+	{
+		free(gIDs);
+		gIDs = NULL;
+	}
+	gIDs = (DWORD*)malloc(gRegMax * sizeof(DWORD));
+	if(gIDs == NULL)
+	{
+		return HLP_ERR_CANNOT_LOAD_LIB;
+	}
 
-printf("hlp: ver = %04X, release = %08X, regmax = %d\n", wVer, (unsigned int)dwReleaseDate, gRegMax);
+	printf("hlp: ver = %04X, release = %08X, regmax = %d\n", wVer, (unsigned int)dwReleaseDate, gRegMax);
 
-// open
-nRet = SB_FP_OPEN(gSensorType, (BYTE**)&gValidFile, (BYTE**)&gMatchData);
-printf("zw ret = %d\n", nRet);
-if(nRet < 0)
-	return nRet;
+	// open
+	nRet = SB_FP_OPEN(gSensorType, (BYTE**)&gValidFile, (BYTE**)&gMatchData);
+	printf("zw ret = %d\n", nRet);
+	if(nRet < 0)
+		return nRet;
 
-// sensor init
-_settings_get(gSensorType, &dwMechanical, &dwExpose);
+	// sensor init
+	_settings_get(gSensorType, &dwMechanical, &dwExpose);
 
 
-nRet = SB_FP_CMOSINIT(dwMechanical, dwExpose);
-printf("zw ret1 = %d\n", nRet);
-if(nRet < 0)
-	return nRet;
+	nRet = SB_FP_CMOSINIT(dwMechanical, dwExpose);
+	printf("zw ret1 = %d\n", nRet);
+	if(nRet < 0)
+		return nRet;
 
-fp_enable = 1;
-return TRUE;
+	fp_enable = 1;
+	return TRUE;
 }
 
 
@@ -1249,64 +1254,64 @@ int LoadFpData(char *nID,int FingerNum,char *FileName)
 	}
 #if 1
 
-if(gSensorType == CMOSTYPE_OP5 )
-{
-	return sfm_LoadFpData(nID,FingerNum,FileName);
-}
-#endif
-if((nID==NULL) || access(FileName,R_OK|F_OK) != 0)
-{
-	return FALSE;
-}
-nPos = hlpEnrollPrepare((long)(atol(nID)), (long)FingerNum, (long)0);
-if(nPos<0)
-{
-	return FALSE;
-}
-
-sprintf(ad_FileName,"%s.ad",FileName);
-//adapted finger size is FPDATASIZE+32
-if(get_file_size(ad_FileName)==FPDATASIZE+FINGER_MD5){
-
-	vFile = fopen( ad_FileName, "rb" );
-	if(vFile)
+	if(gSensorType == CMOSTYPE_OP5 )
 	{
-		fseek(vFile,FPDATASIZE,SEEK_SET);
-		fread(Finger_md5,FINGER_MD5,1,vFile);
-		if(!(MD5_file(FileName,FPDATASIZE,Str_md5)==0&&strncmp(Str_md5,Finger_md5,FINGER_MD5)==0))
+		return sfm_LoadFpData(nID,FingerNum,FileName);
+	}
+#endif
+	if((nID==NULL) || access(FileName,R_OK|F_OK) != 0)
+	{
+		return FALSE;
+	}
+	nPos = hlpEnrollPrepare((long)(atol(nID)), (long)FingerNum, (long)0);
+	if(nPos<0)
+	{
+		return FALSE;
+	}
+
+	sprintf(ad_FileName,"%s.ad",FileName);
+	//adapted finger size is FPDATASIZE+32
+	if(get_file_size(ad_FileName)==FPDATASIZE+FINGER_MD5){
+
+		vFile = fopen( ad_FileName, "rb" );
+		if(vFile)
 		{
-			fclose(vFile);
-			vFile=NULL;
-			remove(ad_FileName);
-		}else {
-			fseek(vFile,0L,SEEK_SET);
+			fseek(vFile,FPDATASIZE,SEEK_SET);
+			fread(Finger_md5,FINGER_MD5,1,vFile);
+			if(!(MD5_file(FileName,FPDATASIZE,Str_md5)==0&&strncmp(Str_md5,Finger_md5,FINGER_MD5)==0))
+			{
+				fclose(vFile);
+				vFile=NULL;
+				remove(ad_FileName);
+			}else {
+				fseek(vFile,0L,SEEK_SET);
+			}
+
 		}
+	}
+	if(vFile==NULL)
+	{
+		vFile = fopen( FileName, "rb" );
 
 	}
-}
-if(vFile==NULL)
-{
-	vFile = fopen( FileName, "rb" );
+	if(vFile == NULL)
+	{
+		return FALSE;
+	}
 
-}
-if(vFile == NULL)
-{
-	return FALSE;
-}
-
-vSize = fread( gFpdataBuff, FPDATASIZE, 1,  vFile );
-if(vSize != 1)
-{
+	vSize = fread( gFpdataBuff, FPDATASIZE, 1,  vFile );
+	if(vSize != 1)
+	{
+		fclose( vFile );
+		return FALSE;
+	}
+	gValidFile[nPos]=1;
+	memcpy(&gMatchData[nPos],gFpdataBuff, sizeof(FPINFO));
+	gMatchData[nPos].FingerNum = (BYTE)(DWORD)FingerNum;
+	gMatchData[nPos].ID=(DWORD)(atol(nID));
 	fclose( vFile );
-	return FALSE;
-}
-gValidFile[nPos]=1;
-memcpy(&gMatchData[nPos],gFpdataBuff, sizeof(FPINFO));
-gMatchData[nPos].FingerNum = (BYTE)(DWORD)FingerNum;
-gMatchData[nPos].ID=(DWORD)(atol(nID));
-fclose( vFile );
-// printf("%s,%s,%d,%d\n",__func__,nID,FingerNum,gMatchData[nPos].ID);
-return TRUE;
+	// printf("%s,%s,%d,%d\n",__func__,nID,FingerNum,gMatchData[nPos].ID);
+	return TRUE;
 }
 
 int EnrollState=0;
@@ -1417,12 +1422,12 @@ int Enroll( char * nID ,int FingerNum,char *tpath,char *dpath,
 			return -4;
 		}
 		else if(nRet > 0)   //指纹以存在
-				{
+		{
 			serial_clear(COM3);
 			finger_enroll = FREE;
 			hlp_printf( "Finger Duplicated: ID = %d\n", gMatchData[nRet-1].ID );
 			return -5;
-				}
+		}
 		else
 			hlp_printf( "Enroll OK\n");
 		if(i<3)
@@ -1676,41 +1681,41 @@ long OneToOneMatch(char *nID,int FingerNum,char *tpath)
 	if( fp_enable == 0||nID==NULL)
 		return -1;
 #if 1
-if(gSensorType == CMOSTYPE_OP5 )
-{
-	return sfm_OneToOneMatch(nID, tpath);
-}
+	if(gSensorType == CMOSTYPE_OP5 )
+	{
+		return sfm_OneToOneMatch(nID, tpath);
+	}
 #endif	
-ID = atol(nID);
-if ((nRet = hlpCheckFingerNum((long)ID, FingerNum)) < 0)
-{
-	return nRet;
-}
+	ID = atol(nID);
+	if ((nRet = hlpCheckFingerNum((long)ID, FingerNum)) < 0)
+	{
+		return nRet;
+	}
 
-if (valid_capture_finger(0) != TRUE)
-{
-	return FP_ERR_NOT_PRESSED;
-}
+	if (valid_capture_finger(0) != TRUE)
+	{
+		return FP_ERR_NOT_PRESSED;
+	}
 
-if(tpath)
-{
-	hlpSaveImageToFile(tpath, SB_FP__256IMAGE, 256, 256);
-}
+	if(tpath)
+	{
+		hlpSaveImageToFile(tpath, SB_FP__256IMAGE, 256, 256);
+	}
 
-nPos = _get_pos((long)ID, FingerNum);
-hlp_printf("nPos is %d, gRegMax is %d\n",nPos,gRegMax);
-if (nPos == gRegMax)
-	return HLP_ERR_ID;
+	nPos = _get_pos((long)ID, FingerNum);
+	hlp_printf("nPos is %d, gRegMax is %d\n",nPos,gRegMax);
+	if (nPos == gRegMax)
+		return HLP_ERR_ID;
 
-nRet = SB_FP_VERIFYIMAGE256(nPos, &bAdapted);
-hlp_printf("%d: nRet is %d\n",__LINE__,nRet);
+	nRet = SB_FP_VERIFYIMAGE256(nPos, &bAdapted);
+	hlp_printf("%d: nRet is %d\n",__LINE__,nRet);
 
-if(nRet<0)
-{
-	return 0;
-}
+	if(nRet<0)
+	{
+		return 0;
+	}
 
-return 1;
+	return 1;
 }
 
 char *old_id=NULL;
@@ -1873,20 +1878,20 @@ long hlpDelete(char* nID, long nFingerNum)
 	}
 #if 1
 
-if(gSensorType == CMOSTYPE_OP5 )
-{
-	return sfm_DeleteFpOne(nID, nFingerNum);
-}
+	if(gSensorType == CMOSTYPE_OP5 )
+	{
+		return sfm_DeleteFpOne(nID, nFingerNum);
+	}
 #endif
-ID = atol(nID);
-nPos = _get_pos(ID, nFingerNum);
-if (nPos == gRegMax)
-{
-	return HLP_ERR_ID;
-}
+	ID = atol(nID);
+	nPos = _get_pos(ID, nFingerNum);
+	if (nPos == gRegMax)
+	{
+		return HLP_ERR_ID;
+	}
 
-_delete(nPos);
-return 0;
+	_delete(nPos);
+	return 0;
 }
 
 /**
@@ -1965,13 +1970,13 @@ int hlpDeleteAll(void)
 	}
 #if 1
 
-if(gSensorType == CMOSTYPE_OP5 )
-{
-	return sfm_DeleteFpAll();
-}
+	if(gSensorType == CMOSTYPE_OP5 )
+	{
+		return sfm_DeleteFpAll();
+	}
 #endif	
-_delete_all();
-return TRUE;
+	_delete_all();
+	return TRUE;
 }
 
 
@@ -2309,7 +2314,7 @@ int finger_probe()
 		return TRUE;
 	}
 	//    else {
-		//        set_gpio_off(FINGER_POWER);
+	//        set_gpio_off(FINGER_POWER);
 	//        return FALSE;
 	//    }
 }
@@ -2330,4 +2335,23 @@ int finger_power_off()
 int SetFingerProbeMode(int mode)
 {
 	PROBEMODE=mode;
+}
+
+DWORD * _gId_Iterator()
+{
+	int i,j = 0;
+
+	for (i=0; i<gRegMax; i++)
+	{
+		if (gValidFile[i] != 0){
+			gIDs[j++] = gMatchData[i].ID;
+			//hlp_printf("ID Found:%d\n", gMatchData[i].ID);
+		}
+	}
+	return gIDs;
+}
+
+DWORD *  hlpIdIterator()
+{
+	return _gId_Iterator();
 }
