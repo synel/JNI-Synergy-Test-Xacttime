@@ -1,0 +1,352 @@
+#include "gpio.h"
+#include "../public/public.h"
+
+int gpiofd=-1; 
+int gpiostatus=0;    
+GPIOINFO gpio_info[4];
+
+/*--------------------------------------------------------------------------*
+@Function        : open_gpio_devices - open gpio device
+@Include         : "gpio.h"
+@Description     : 
+                 00-iuput,01-out
+@Return Value	: Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int open_gpio_devices(void)    // 0--open ; 1--close
+{
+	char *path = "/dev/GPIO2_5";
+    int val_first=207,val_set=21589;   // 207=1100,1111 ; 21761=101,0101,0000,0001
+
+    if(access(path,F_OK) != 0||(gpiofd = open(path, O_RDWR)) == -1) 
+    {
+        perror("open GPIODEV error:");
+        return FALSE;
+    }
+
+    if(ioctl(gpiofd, con_DAT, &val_set) != 0) //set GPIO control register to 21589
+    {
+        return FALSE;
+    }
+
+    gpiostatus=val_first; //GPIO current state
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) //set GPIO inital state 207(LCD on,input 0,others off)
+    {
+        return FALSE;
+    }
+   return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        :close_gpio - close gpio
+@Include         : "gpio.h"
+@Description     : release resource occupied by gpio device£»
+@Return Value    : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int close_gpio(void) 
+{
+    if(gpiofd >0 && close(gpiofd) == -1)
+    {
+        perror("close gpio");
+        return FALSE;
+    }
+    return TRUE;
+} 
+
+/*--------------------------------------------------------------------------*
+@Function        :val_ok - open power-light
+@Include         :gpio.h
+@Description     :
+                 open red light
+		 0-open	,1-close
+@Return Value    :Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int red_on(void)      
+{
+    int red_on_value=1;//128;   // 128=1000,0000		~128=0111,1111
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus &=~red_on_value; // set the eighth bit to 0 (open light)
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+/*--------------------------------------------------------------------------*
+@Function        : val_err - power-light off
+@Include         : "gpio.h"
+@Description     :
+                 shutdonw red light£» //gph10 
+                 0-open	,1-close
+@Return Value    : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int red_off(void) 
+{
+    int red_off_value=1;//128;
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus=gpiostatus|red_off_value;    // set the eighth bit to 1 (close light)
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) 
+    {
+        perror("ioctl put_DAT error 2");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : light_on - Green light on
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int green_on(void)
+{
+  int green_on_value=2;//64; //64=0100,0000	~64=1011,1111
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus &=~green_on_value; // set the eighth bit to 0 (open light)
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+/*--------------------------------------------------------------------------*
+@Function        : light_off - Green light off
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int green_off(void)
+{
+    int green_off_value=2;//64;
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus=gpiostatus|green_off_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function	 : val_on - Display on
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int lcd_on(void)     
+{
+    int lcd_on_value=32;   
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus &=~lcd_on_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : val_off - Display off
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int lcd_off(void)      
+{
+    int lcd_off_value=32; // 32=0010,0000
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus=gpiostatus|lcd_off_value;
+
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : relay_on - relay on
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.	
+*---------------------------------------------------------------------------*/
+int relay_on(void)     
+{
+    int relay_on_value=8;   //8=0000,1000
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+    gpiostatus &=~relay_on_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : relay_off - relay off
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int relay_off(void)      
+{
+    int relay_off_value=8; // 8=0000,1000
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus=gpiostatus|relay_off_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : video_on - Camera power on
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.	
+*---------------------------------------------------------------------------*/
+int  video_on(void)
+{
+   int video_on_value=4; // 0000,1000
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    gpiostatus=gpiostatus|video_on_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : video_off - Camera power off 
+@Include         : "gpio.h"
+@Parameters      : 0-open,1-close 
+@Return Value	 : Success TRUE, Failure FALSE.	
+*---------------------------------------------------------------------------*/
+int video_off(void)
+{
+    int status,video_off_value=4;
+
+    if(gpiofd<=0)
+    {
+        return FALSE;
+    }
+
+    status=gpiostatus &=~video_off_value;
+    if(ioctl(gpiofd, put_DAT, &gpiostatus) != 0) // set light on 
+    {
+        perror("ioctl put_DAT error 1");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : GpioOpt - gpio operation 
+@Include         : "gpio.h"
+@Description     : opt- type£¨1-8£©
+@Return Value    : Success TRUE, Failure FALSE.
+*---------------------------------------------------------------------------*/
+int GpioOpt( int opt)
+{
+    switch(opt)
+    {
+        case 1:
+            if(red_on()==FALSE)		
+                return FALSE;
+        break;
+        case 2:
+            if(red_off()==FALSE)	
+                return FALSE;
+        break;
+        case 3:
+            if(green_on()==FALSE)
+                return FALSE;
+        break;
+        case 4:
+            if(green_off()==FALSE)	
+                return FALSE;
+        break;
+        case 5:
+            if(lcd_on()==FALSE)		
+                return FALSE;
+        break;
+        case 6:
+            if(lcd_off()==FALSE)	
+                return FALSE;
+        break;
+        case 7:
+            if(relay_on()==FALSE)	
+                return FALSE;
+        break;
+        case 8:
+            if(relay_off()==FALSE)	
+                return FALSE;
+        break;			
+        case 9:
+            if(video_on()==FALSE)
+                return FALSE;
+        break;
+        case 10:
+            if(video_off()==FALSE)	
+                return FALSE;
+        break;			
+    }
+    return TRUE;
+}
+
+/*--------------------------------------------------------------------------*
+@Function        : set_gpio_action - 

@@ -1,0 +1,554 @@
+#include "../public/public.h"
+#include "../sound/sound.h"
+#include "finger.h"
+
+int fp_enable=0;		//initialization success
+FPDEVINFO fpdevinfo;
+void *vhfp;                      
+
+int (*fp)( int FuncNo, long Param1, long Param2, long Param3, long Param4, long Param5 );
+int fingerSum=0;             //the number of current fingerprints
+int gRegMax = 1;
+FPINFO* gMatchData;
+BYTE* gValidFile;
+FPINFO gFeature;
+char *fingerfilesuffix="s10";
+
+void*		engTemp;
+int			engTempSize;
+engcmos*	engCmosInitResult;
+void*		engImage256;
+void*		engFirstImage;
+
+enum
+{
+	HLP_ERR_CANNOT_LOAD_LIB = -101,
+	HLP_ERR_CANNOT_LOAD_DB = -102,
+	HLP_ERR_ID = -103,
+	HLP_ERR_OVER = -104,
+};
+/************************************************************************/
+/* bitmap                                                               */
+/************************************************************************/
+//===========
+
+typedef struct tagBITMAPFILEHEADER
+{
+	WORD bfType;
+	DWORD bfSize;
+	WORD bfReserved1;
+	WORD bfReserved2;
+	DWORD bfOffBits;
+} BITMAPFILEHEADER;//14
+
+typedef struct tagBITMAPINFOHEADER
+{
+	DWORD biSize;
+	long biWidth;
+	long biHeight;
+	WORD biPlanes;
+	WORD biBitCount;
+	DWORD biCompression;
+	DWORD biSizeImage;
+	long biXPelsPerMeter;
+	long biYPelsPerMeter;
+	DWORD biClrUsed;
+	DWORD biClrImportant;
+} BITMAPINFOHEADER;//40
+
+typedef struct tagRGBQUAD
+{
+	BYTE rgbBlue;
+	BYTE rgbGreen;
+	BYTE rgbRed;
+	BYTE rgbReserved;
+} RGBQUAD;//4
+
+typedef struct tagBITMAPINFO
+{
+	BITMAPINFOHEADER bmiHeader;
+	RGBQUAD bmiColors[1];
+} BITMAPINFO; 
+
+
+BITMAPINFOHEADER *m_lpBMIH=NULL;
+WORD bfType;
+
+
+/*--------------------------------------------------------------------------*
+@Function			:write_bitmap - save fingerprint image
+@Include 			: "finger_s10.h"
+@Description			:imgout£ºpath of image£»
+				buffer : data of image;
+				nWidth : Image width;
+				nHeight : Image height
+@Return Value		: void
+*---------------------------------------------------------------------------*/
+void write_bitmap(char *imgout, unsigned char *buffer, int nWidth, int nHeight)
+{
+	BITMAPFILEHEADER bfh;
+	RGBQUAD* m_lpvColorTable;
+	FILE *fo;
+	int i;
+	int m_nColorTableEntries=256;
+	int m_nBitCount=8;
+	 char *ptr;
+
+        BYTE  gImgTmp1[nHeight][nWidth];
+	if((fo = fopen(imgout, "wb")) == NULL) {
+		//printf("cannot open %s\n", imgout);
+		return;
+		}
+
+		m_nColorTableEntries=256;
+		m_nBitCount=8;
+
+    m_lpBMIH = (BITMAPINFOHEADER*) malloc(sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * m_nColorTableEntries);
+
+    m_lpBMIH->biSize = sizeof(BITMAPINFOHEADER);
+
+    m_lpBMIH->biWidth  = nWidth;
+    m_lpBMIH->biHeight = nHeight;
+    m_lpBMIH->biPlanes = 1;
+    m_lpBMIH->biBitCount = m_nBitCount;
+    m_lpBMIH->biCompression = 0;
+    m_lpBMIH->biSizeImage = 0;
+    m_lpBMIH->biXPelsPerMeter = 0;
+    m_lpBMIH->biYPelsPerMeter = 0;
+    m_lpBMIH->biClrUsed      = m_nColorTableEntries;
+    m_lpBMIH->biClrImportant = m_nColorTableEntries;
+
+    m_lpvColorTable = (RGBQUAD*)((unsigned char *)m_lpBMIH + sizeof(BITMAPINFOHEADER)); // points inside m_lpBMIH.
+    for (i = 0; i < m_nColorTableEntries; i++)
+    {
+        BYTE k = m_nColorTableEntries==256?(BYTE)i:(BYTE)i<<4;
+            m_lpvColorTable[i].rgbRed      = k;  // Gray Scale !
+            m_lpvColorTable[i].rgbGreen    = k;
+            m_lpvColorTable[i].rgbBlue     = k;
+            m_lpvColorTable[i].rgbReserved = 0;
+    }
+
+	// Fill in the Bitmap File Header
+	memset(&bfh, 0, sizeof(BITMAPFILEHEADER));
+	bfh.bfType = ( (WORD) ('M' << 8) | 'B');
+	// Calculate the size of the bitmap including the palette
+	bfh.bfSize = 14 + sizeof(BITMAPINFOHEADER) +
+			m_lpBMIH->biClrUsed * sizeof(RGBQUAD) +
+			((((m_lpBMIH->biWidth * m_lpBMIH->biBitCount + 31)/32) * 4) * m_lpBMIH->biHeight);
+      // printf("%ld\n",bfh.bfSize);	
+	bfh.bfReserved1 = 0;
+	bfh.bfReserved2 = 0;
+
+	// Offset to actual bits is after palette
+
+	bfh.bfOffBits = 14 + sizeof(BITMAPINFOHEADER)
+		+ m_lpBMIH->biClrUsed * sizeof(RGBQUAD);
+
+	 //Write the results
+	 //Notice: according to bmp file format,BITMAPFILEHEADER's size should be 14 bytes,but here it'size 
+	 //is 16 bytes because of byte align.that is to say ,there are to pad bytes
+	 //Though you add '-fpack-struct' when compiler it,it is still 16 bytes
+	 //so other way is used to prevent writing pad bytes to file.
+
+	ptr=(char*)&bfh;
+	fwrite(ptr, 2, 1, fo);
+	ptr+=4;
+	fwrite(ptr, sizeof(BITMAPFILEHEADER)-4, 1, fo);
+	fwrite(m_lpBMIH, sizeof(BITMAPINFOHEADER)+m_lpBMIH->biClrUsed*sizeof(RGBQUAD), 1, fo);
+  	 for(i=nHeight-1;i>=0;i--)
+    {
+        memcpy(&gImgTmp1[i][0],buffer,nWidth);
+        buffer += nWidth;
+    }
+	fwrite(&gImgTmp1[0][0], bfh.bfSize-14-m_lpBMIH->biClrUsed*sizeof(RGBQUAD), 1, fo);
+	//fwrite(buffer, bfh.bfSize-sizeof(BITMAPFILEHEADER)-m_lpBMIH->biClrUsed*sizeof(RGBQUAD), 1, fo);
+	fclose(fo);
+	free(m_lpBMIH);
+} 
+
+/*--------------------------------------------------------------------------*
+@Function			:ErrorProc - error
+@Include      		: "finger_s10.h"
+@Description			: nErr£ºError No.
+@Return Value		: Success 0,Failure-1.	
+*---------------------------------------------------------------------------*/
+int ErrorProc(int nErr)
+{
+	char* str ;
+printf("nErr=%d\n",nErr);
+return 0;
+	switch (nErr)
+	{
+	case FP_ERR_SUCCESS:
+		str = "eng: success\r\n";
+		break;
+	case FP_ERR_PARAM:
+		str = "eng: parameter error\r\n";
+		break;
+	case FP_ERR_NOT_ENROLLED_POS:
+		str = "eng: not enrolled position\r\n";
+		break;
+	case FP_ERR_BAD_FINGER:
+		str = "eng: bad fingerprint\r\n";
+		break;
+	case FP_ERR_MERGE:
+		str = "eng: cannot merge three fingerprints\r\n";
+		break;
+	case FP_ERR_IDENTIFY:
+		str = "eng: cannot identify\r\n";
+		break;
+	case FP_ERR_VERIFY:
+		str = "eng: cannot verify\r\n";
+		break;
+	case FP_ERR_SENSOR:
+		str = "eng: sensor error\r\n";
+		break;
+	case FP_ERR_NOT_PRESSED:
+		str = "eng: not pressed\r\n";
+		break;
+	case DEV_ERR:
+		str = "eng: device error\r\n";
+		break;
+	case HLP_ERR_CANNOT_LOAD_LIB:
+		str = "hlp: could not load library\r\n";
+		break;
+	case HLP_ERR_CANNOT_LOAD_DB:
+		str = "hlp: could not load database\r\n";
+		break;
+	case HLP_ERR_ID:
+		str = "hlp: invalid ID or Finger number\r\n";
+		break;
+	case HLP_ERR_OVER:
+		str = "hlp: database overflow\r\n";
+		break;
+	default:
+		str = "hlp: unknown error\r\n";
+		break;
+	}
+	printf(str);
+  	return 0;
+}
+/***************************************************************/
+int _get_enroll_count()
+{
+	int i,nCount = 0;
+	
+	for (i=0; i<gRegMax; i++)
+	{
+		if(gValidFile[i] != 0)
+			nCount++;
+	}
+	
+	return nCount;
+}
+
+int _get_empty_pos()
+{
+	int i;
+
+	for (i=0; i<gRegMax; i++)
+	{
+		if (gValidFile[i] == 0)
+			break;
+	}
+	
+	return i;
+}
+//get the positon of fingerprint template
+int _get_pos(long nID, long nFingerNum)
+{
+	int i;
+
+	if (nFingerNum < 0 || nFingerNum > 255) return gRegMax;
+	
+	for (i=0; i<gRegMax; i++)
+	{
+		if (gValidFile[i] != 0 && gMatchData[i].ID == (DWORD)nID && gMatchData[i].FingerNum == nFingerNum)
+			break;
+	}
+
+	return i;
+}
+//////////////////////////////////////////////////////////////////////////
+long hlpEnrollPrepare(long nID, long nFingerNum, long Manager) 
+{
+	int nPos;
+	
+	if (nFingerNum < 0 || nFingerNum > 255) return HLP_ERR_ID;
+	if (Manager < 0 || Manager > 255) return HLP_ERR_ID;
+	
+	nPos = _get_pos(nID, nFingerNum);
+	if (nPos != gRegMax)
+		return HLP_ERR_ID;
+	
+	nPos = _get_empty_pos();
+	if (nPos == gRegMax)
+		return HLP_ERR_OVER;
+
+	return nPos;
+}
+/***************************************************************/
+
+/*--------------------------------------------------------------------------*
+@Function			: SaveTempData - save fingerprint data
+@Include      		: "finger_s10.h"
+@Description			: 
+				nID£ºstaff_No£»
+				nFingerNum : finger number			
+				dpath : path of template
+@Return Value		: Success TURE, Failure FALSE
+*---------------------------------------------------------------------------*/
+int SaveTempData( long nID, long nFingerNum ,char *dpath)
+{
+	FILE * vFile;
+	int vSize;
+	long nRet;
+	char szFileName[256];	
+	FPINFO *pTemplate;
+
+
+	//generated fingerprint data from 3 fingerprint images		 
+	pTemplate=&gFeature;
+	nRet = fp(FP_ENROLLMERGE, (long)pTemplate, 0, 0,0,0);
+	if(nRet < 0)
+	{
+		ErrorProc( nRet );
+		return nRet;
+//		i=0;
+//		continue;
+	}
+	//load fingerprint to Fingerprint device
+	nRet = hlpEnrollPrepare(nID*10+nFingerNum, nFingerNum, 0);
+	if(nRet<0)
+	{
+		ErrorProc( nRet );
+		return nRet;
+		//i=0;
+	}
+
+	gValidFile[nRet] = 1;
+	gFeature.ID = (DWORD)nID*10+nFingerNum;
+	gFeature.FingerNum = (BYTE)nFingerNum;
+	gFeature.Manager = (BYTE)(DWORD)1;
+	gFeature.Valid = 1;
+	memcpy(&gMatchData[nRet], &gFeature, sizeof(FPINFO));	
+
+	sprintf(szFileName, "%s%ld_%d.s10", dpath,nID, (int)nFingerNum);
+
+       creatdir(szFileName);
+	vFile = fopen( szFileName, "wb" );
+	if( vFile == NULL )
+		return -1;	
+	
+	vSize = fwrite( &gFeature, FPDATASIZE, 1,  vFile );
+	fclose( vFile );
+	if( vSize != 1 )
+		return -1;
+
+	return TRUE;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Function : SB_FP_ENROLLNTH256
+// Input    :
+//     nStep - Must one of 1, 2, 3. Indicates the step of an enrollment.
+// Output   :
+// Return   :
+//     FP_ERR_SUCCESS
+//     -1 FP_ERR_PARAM
+//     -3 FP_ERR_BAD_FINGER
+//     > 0	: The position of doubled fingerprint template + 1.
+//
+int SB_FP_ENROLLNTH256(IN int nStep)
+{
+	int Error=0;
+
+	Error = fp(FP_ENROLLNTH256, (long)nStep, 0, 0, 0, 0);
+	return Error;
+}
+
+int EnrollState=0;
+/*--------------------------------------------------------------------------*
+@Function			: Enroll - enroll fingerprint
+@Include      		: "finger_s10.h"
+@Description			: nID£ºStaff_No.
+				FingerNum : finger_No.
+				tpath : path where to store fingerprint image
+				dpath : path of template
+@Return Value		: 
+				Database overflow -1;
+				unread finger info -2;
+				Time out -3;
+				FP_ERR_BAD_FINGER or FP_ERR_PARAM -4;
+				The position of doubled fingerprint template + 1 -5;
+				Save fingerprint template error -6;
+*---------------------------------------------------------------------------*/
+int Enroll( char * nID ,int FingerNum,char *tpath,char *dpath )
+{
+	long i,j=0;
+	long nRet;
+	if(_get_enroll_count() == gRegMax )
+	{
+//		printf("Database overflow\n");
+		return -1;
+	}
+	nRet = fp(FP_ENROLLSTART, 0, 0, 0 ,0,0); //enroll start
+	if(nRet != 0)
+	{
+		ErrorProc( nRet );
+		return -2;
+	}
+
+	for(i=1;i<4;i++) 
+	{
+		if(fpdevinfo.performBeforScan)
+			fpdevinfo.performBeforScan(i);
+		
+		for(j=0;j<40;j++)
+		{
+			nRet = fp(FP_CAPTUREFINGER, 0, 0, 0, 0, 0);	//get fingerprint image
+			if(nRet==0)	break;		
+		}
+		if(j==40)	
+		{
+//			printf("Time Out\n");
+			return -3;  //timeout,have not read fingerprint data
+		}
+
+		if(tpath){
+		      write_bitmap(tpath,(unsigned char*)SB_FP__256IMAGE,256,256);
+		}
+		if(fpdevinfo.performAfterScan)
+				fpdevinfo.performAfterScan(i);
+
+		nRet=SB_FP_ENROLLNTH256(i);//fp(FP_ENROLLNTH256, (long)i, 0, 0, 0, 0);
+		if(nRet < 0)
+		{
+			ErrorProc( nRet );
+			return -4;
+//			i--;
+//			continue;
+		}
+		else if(nRet > 0)
+		{
+//                        i=0;
+//                        continue;
+			return -5;
+		}
+
+		if(i<3)
+		{
+			while(fp(FP_ISPRESSFINGER, 0, 0, 0, 0, 0) == 0);
+		}
+	}
+
+//	nid = atol(nID)*10+FingerNum;		
+	if(SaveTempData((long)atol(nID),(long)FingerNum,dpath) ==TRUE)	
+		return TRUE;
+	else
+		return -6;
+}
+
+/*--------------------------------------------------------------------------*
+@Function		: OneToOneMatch - fingerprint match
+@Include      	: "finger_s10.h"
+@Description		: nID£ºStaff_No.
+			tpath : path to store fingerprint image
+			waiting press on FPU£¬get fingerprint data£¬OneToOne match
+@Return Value	: Success staff_No.*10+finger_No.;
+			Read Failure -1; 
+			Database empty -2;
+			Comparision Failure 0 or -103;
+*---------------------------------------------------------------------------*/
+long OneToOneMatch(char *nID,char *tpath)
+{
+	int nRet=0,FingerNum=0;
+	long nPos,anpos;
+	DWORD dwAdapted;
+
+	if( fp_enable == 0||nID==NULL)	return -1;
+
+	if (_get_enroll_count() == 0)
+	{
+//		printf("Database empty\n");
+		return -2;
+	}
+
+	nRet = fp(FP_CAPTUREFINGER, 0, 0, 0,0,0);		
+	if(nRet < 0)
+	{
+		return -1;
+	}  
+      if(tpath)
+        {
+		write_bitmap(tpath, (unsigned char*)SB_FP__256IMAGE, 256, 256);
+        }
+	for(FingerNum=0;FingerNum<=10;FingerNum++)
+	{
+		anpos= atol(nID)*10+(long)FingerNum;
+		nPos = _get_pos(anpos, (long)FingerNum);
+		if (nPos != gRegMax)	break;
+	}
+	if(FingerNum == 10)
+	{
+		ErrorProc(HLP_ERR_ID);
+		return HLP_ERR_ID;
+	}
+	nRet = fp(FP_VERIFYIMAGE256, (long)nPos, (long)&dwAdapted, 0, 0, 0);
+
+	if(nRet<0)
+	{
+		return 0;
+	}
+	else
+		return anpos;
+}
+/*--------------------------------------------------------------------------*
+@Function			:OneToNMatch - fingerprint data match
+@Include      		: "finger_s10.h"
+@Description			: tpath : path of fingerprint image
+				fingerprint match 1:N
+				waiting press on FPU£¬get fingerprint data£¬OneToN match
+@Return Value		: Success staff_NO.*10+finger_No;
+				 Read Failure -1; 
+				Database empty -2;
+				Comparision Failure 0 or -103;	
+*---------------------------------------------------------------------------*/
+long OneToNMatch(char *tpath)
+{
+	long nRet;
+	unsigned long dwAdapted;
+
+	if( fp_enable == 0)		return -1;
+	if (_get_enroll_count() == 0)
+	{
+//		printf("Database empty\n");
+		return -2;
+	}
+
+	nRet = fp(FP_CAPTUREFINGER, 0, 0, 0,0,0);		
+	if(nRet < 0)
+	{
+		return -1;
+	}  
+      if(tpath)
+        {
+		write_bitmap(tpath, (unsigned char*)SB_FP__256IMAGE, 256, 256);
+        }
+	nRet = fp(FP_IDENTIFYIMAGE256, (long)&dwAdapted, 0, 0, 0, 0);
+
+	if(nRet<0)
+	{
+		return 0;
+	}
+	else
+	{
+		return gMatchData[nRet].ID;
+	}
+
+}
+
+/*--------------------------------------------------------------------------*
+@Function			: InitFp - initialize the fingerprint device
+@Include      		: "finger_s10.h"
+@Description			: sensortype:
