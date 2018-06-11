@@ -1253,7 +1253,7 @@ int LoadFpData(char *nID,int FingerNum,char *FileName)
 		return FALSE;
 	}
 #if 1
-
+    hlp_printf("%d: filename: %s\n",__LINE__,FileName);
 	if(gSensorType == CMOSTYPE_OP5 )
 	{
 		return sfm_LoadFpData(nID,FingerNum,FileName);
@@ -2353,5 +2353,11 @@ DWORD * _gId_Iterator()
 
 DWORD *  hlpIdIterator()
 {
-	return _gId_Iterator();
+	if(gSensorType == CMOSTYPE_OP5 )
+	{
+		//TODO
+		return NULL;
+	}else{
+		return _gId_Iterator();
+	}
 }

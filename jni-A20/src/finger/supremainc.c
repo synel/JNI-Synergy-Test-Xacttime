@@ -14,8 +14,9 @@
 #include <string.h>
 
 #include "../serial/serial.h"
-
+#include "debug.h"
 #include "supremainc.h"
+#define hlp_printf plog
 
 //#include "../comm/rt_comm/public.h"
 
@@ -36,7 +37,7 @@ static int port = 1;	// Synel use 2 port  20170525
 
 static int user_data_len=992;//lxy
 
-//È¥µô×Ö·û´®µÄ»Ø³µ»»ÐÐ·û
+//È¥ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ä»Ø³ï¿½ï¿½ï¿½ï¿½Ð·ï¿½
 static void cut( char *tmp )
 {
 	if( tmp == NULL )
@@ -99,7 +100,7 @@ static int creatdir( char *path )
 	if( *p == '/' )
 	{
 		*p1 = '/'; p++;
-	}                                          //Èç¹ûµÚÒ»¸ö×Ö·ûÎª'/'ÔòÎª¸úÄ¿Â¼,»¹Ó¦µ±»ñÈ¡µ±Ç°Ä¿Â¼
+	}                                          //ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½Îª'/'ï¿½ï¿½Îªï¿½ï¿½Ä¿Â¼,ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½Ç°Ä¿Â¼
 //printf("creatdir 3\n");
 	while( ( len = strcspn( p, "/" ) ) )
 	{
@@ -108,11 +109,11 @@ static int creatdir( char *path )
 			break;
 		}
 		strncat( p1, p, len + 1 );
-		if( access( p1, F_OK ) != 0 )   //Èç¹ûÄ¿Â¼²»´æÔÚ
+		if( access( p1, F_OK ) != 0 )   //ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		{
 			if( mkdir( p1, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH ) != 0 )
 			{
-				return -1;              //½¨Á¢Ä¿Â¼
+				return -1;              //ï¿½ï¿½ï¿½ï¿½Ä¿Â¼
 			}
 		}
 		p += len;
@@ -122,11 +123,11 @@ static int creatdir( char *path )
 }
 
 
-//º¯Êý¹¦ÄÜ 1µ½4×Ö½ÚµÄHEXÊýÖµÊý¾Ý×ª»»ÎªÎÞ·ûºÅÕûÐÍ
-//²ÎÊý£º   in£ºÊäÈëÊ×Ö·
-//         size: ÊäÈëµÄ×Ö·ûÊý£¬Èô³¬¹ý4£¬ÔòÈ¡4
-//         flag: ÊäÈëµÄÖ÷»ú×Ö½ÚÐò£¬0£ºÐ¡¶ËÄ£Ê½ ÆäËü£º´ó¶ËÄ£Ê½ (Êä³ö¹Ì¶¨ÎªÐ¡¶ËÄ£Ê½)
-//·µ»ØÖµ   ×ª»»½á¹û
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½4ï¿½Ö½Úµï¿½HEXï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½   inï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
+//         size: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½4ï¿½ï¿½ï¿½ï¿½È¡4
+//         flag: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½0ï¿½ï¿½Ð¡ï¿½ï¿½Ä£Ê½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ (ï¿½ï¿½ï¿½ï¿½Ì¶ï¿½ÎªÐ¡ï¿½ï¿½Ä£Ê½)
+//ï¿½ï¿½ï¿½ï¿½Öµ   ×ªï¿½ï¿½ï¿½ï¿½ï¿½
 static unsigned int HexToUInt(void *in, unsigned int size, int flag)
 {
     unsigned int ret = 0;
@@ -199,12 +200,12 @@ static unsigned int HexToUInt(void *in, unsigned int size, int flag)
 
 }
 
-//º¯Êý¹¦ÄÜ£º½«Ð¡¶ËÄ£Ê½µÄÎÞ·ûºÅÕûÊý×ª»»ÎªÈÎºÎ×Ö½ÚÐòµÄHEX¸ñÊ½
-//²ÎÊý£º   in£ºÊäÈëÎÞ·ûºÅÕûÊý£¬Ð¡¶ËÄ£Ê½£¨ÄæÐò£©
-//         out:Êä³öÊ×Ö·
-//         size:ÊäÈëµÄ×Ö½ÚÊý£¬1¡¢2¡¢3¡¢4
-//         flag:Êä³öÖ÷»ú×Ö½ÚÐò£¬0£ºÐ¡¶ËÄ£Ê½ ÆäËü£º´ó¶ËÄ£Ê½ (ÊäÈë¹Ì¶¨ÎªÐ¡¶ËÄ£Ê½)
-//·µ»ØÖµ   0£º×ª»»³É¹¦£¬-1£ºÊä³öÎ»Êý²»×ã
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü£ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½Îºï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½HEXï¿½ï¿½Ê½
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½   inï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//         out:ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
+//         size:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½2ï¿½ï¿½3ï¿½ï¿½4
+//         flag:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½0ï¿½ï¿½Ð¡ï¿½ï¿½Ä£Ê½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ (ï¿½ï¿½ï¿½ï¿½Ì¶ï¿½ÎªÐ¡ï¿½ï¿½Ä£Ê½)
+//ï¿½ï¿½ï¿½ï¿½Öµ   0ï¿½ï¿½×ªï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½-1ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 static int UIntToHex(unsigned int in, void * out, unsigned int size, int flag)
 {
     int ret = 0;
@@ -333,8 +334,8 @@ static int pack_packet232(packet232 *in,unsigned char *out){
    return 1;
 }
 
-//³É¹¦¡¡1
-//Ê§°Ü¡¡0
+//ï¿½É¹ï¿½ï¿½ï¿½1
+//Ê§ï¿½Ü¡ï¿½0
 static int unpack_packet232(unsigned char *in,packet232 *out){
    packet232 *ptr = out;
    int i = 0;
@@ -370,7 +371,7 @@ static int unpack_packet232(unsigned char *in,packet232 *out){
 }
 
 /*
- * »ñÈ¡Ä£¿éµÄ²¨ÌØÂÊ
+ * ï¿½ï¿½È¡Ä£ï¿½ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½
  * return 1 = true 0 = false
  */
 int get_module_baud(){
@@ -879,7 +880,7 @@ static int get_module_available_finger(int *n){
 		if (ans.flag == SUCCESS) {
 			printf("param id 0x%02X\r\n", ans.param);
 			printf("param value 0x%02X,%d\r\n", ans.size, ans.size);
-			*n = ans.size / 2;		// 0x41 mode, Ò»¸öid±£´æÁ½¸öÄ£°æ£¬¹ÊÊµ¼ÊÈÝÁ¿¼õ°ë
+			*n = ans.size / 2;		// 0x41 mode, Ò»ï¿½ï¿½idï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½æ£¬ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			return 1;
 		} else if (ans.flag == NOT_FOUND) {
 			printf("There is no requested parameter ID found\r\n");
@@ -1499,7 +1500,7 @@ static int _enroll_by_scan1(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -1602,7 +1603,7 @@ static int _enroll_by_scan2(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -1707,7 +1708,7 @@ static int _enroll_by_scan3(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -1812,7 +1813,7 @@ static int _enroll_by_scan4(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -1914,7 +1915,7 @@ static int _enroll_by_scan5(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -1986,7 +1987,7 @@ static int _enroll_by_scan5(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2089,7 +2090,7 @@ static int _enroll_by_scan6(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2161,7 +2162,7 @@ static int _enroll_by_scan6(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2265,7 +2266,7 @@ static int _enroll_by_scan7(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2372,7 +2373,7 @@ static int _enroll_by_scan8(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2475,7 +2476,7 @@ static int _enroll_by_scan9(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2547,7 +2548,7 @@ static int _enroll_by_scan9(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2650,7 +2651,7 @@ static int _enroll_by_scan10(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2722,7 +2723,7 @@ static int _enroll_by_scan10(int user_id) {
 			break;
 		} else if (ans.flag == INVALID_ID) {
 //			printf(
-//					"The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\r\n");
+//					"The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\r\n");
 			break;
 		}
 	}
@@ -2876,7 +2877,7 @@ int _enroll_by_template(int user_id, char *template, int template_size) {
 //			printf("The number of fingerprints enrolled in same ID exceeds its limit (10)\n");
 			return 0;
 		}else if (ans.flag == INVALID_ID) {
-//			printf("The requested user ID is invalid. Note that ¡®0x0000¡¯  cannot be used\n");
+//			printf("The requested user ID is invalid. Note that ï¿½ï¿½0x0000ï¿½ï¿½  cannot be used\n");
 			return 0;
 		}else if (ans.flag == EXIST_FINGER) {
 //			printf("The  same  finger  is  already  enrolled. \n");
@@ -3714,7 +3715,7 @@ int sfm_LoadFpData(char *nID, int FingerNum, char *FileName) {
 		return 0;
 	}
 
-printf("load uid = %d\n", uid);
+   hlp_printf("load uid = %d filenam %s\n", uid, FileName);
 
 	ret = _enroll_by_template(uid, zwtemplate, 384);
 	if (ret == 1) 
@@ -3772,7 +3773,7 @@ int sfm_Enroll(char * nID, int FingerNum, char *tpath, char *dpath) {
 
 			memset(file_name,0,sizeof(file_name));
 //			sprintf(file_name,"%s%s_%d.s10",dpath,nID,FingerNum);
-			sprintf(file_name,"%s%d/%s_%d.s10",dpath,atoi(nID)/1000,nID,FingerNum);
+			sprintf(file_name,"%s/%d/%s_%d.s10",dpath,atoi(nID)/1000,nID,FingerNum);
 			printf("template file name %s\r\n",file_name);
 
 			creatdir(file_name);
@@ -4031,10 +4032,10 @@ int sfm_get_enroll_count(){
 	int ret = 0,n = 0;
 	ret = get_module_enrolled_finger(&n);
 	if (ret == 1) {
-		printf("n = %d\r\n",n);
-		printf("get_module_enrolled_finger success\r\n");
+		hlp_printf("n = %d\r\n",n);
+		hlp_printf("get_module_enrolled_finger success\r\n");
 	} else {
-		printf("get_module_enrolled_finger fail\r\n");
+		hlp_printf("get_module_enrolled_finger fail\r\n");
 	}
 
 	return n;

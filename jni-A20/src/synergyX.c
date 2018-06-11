@@ -29,6 +29,7 @@
 #define JNI_FALSE  0
 #define JNI_TRUE   1
 #define FP_LIB_PATHNAME "/usr/lib/fpu/fp.so"
+#define FPIMGLOCATION "/tmp/zw.bmp"
 
 struct timeval tv1,tv2;
 static char templateLocation[128];
@@ -147,7 +148,14 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 			nSensorType ++;
 			sleep(1);
 		}
-	} while ( ret != 1);
+	} while ( ret != JNI_TRUE && nSensorType <= 3);
+	if ( ret != JNI_TRUE) {
+		//try suprema fpu, fp is already inside the unit, so do not to load all to memory again.
+		nSensorType = 0x33;
+		DLOGI("now try sensor type: %d\n",nSensorType);
+		ret = InitFp(nSensorType, FP_LIB_PATH);
+		DLOGI("InitFp returned value %d\n", ret);
+	}
 	//this is to load all fingers to memory, one can also choose load it on demand for finer finger management
 	int retcode = LoadAllFinger(templateLocation);
 	DLOGI("loadAllfinger: %d ret value : %d\n",retcode, ret);
@@ -205,7 +213,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 
 	DLOGI("at %d\n",__LINE__);
 	int retcode = -1;
-	retcode = Enroll( nativeBadge , fingerNumber,"/tmp/zw.bmp",templateLocation,
+	retcode = Enroll( nativeBadge , fingerNumber,FPIMGLOCATION,templateLocation,
 			formBeforScan,  formAfterScan);
 	if((*env)->ExceptionOccurred(env)) {
 		DLOGI("exception at %d\n",__LINE__);
@@ -244,10 +252,10 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	}
 	//wait for fingerprint to be pressed.
 	//while(SB_FP_ISPRESSFINGER() == 0);
-	sprintf(templateLocation, "s_fp1n_%d.bmp", (int)time(NULL));
+	//sprintf(picturelocation, "s_fp1n_%d.bmp", (int)time(NULL));
 	sprintf(nID,  "%ld",badgeL);
 	do {
-		ret = OneToOneMatch(nID, fingernum, templateLocation);
+		ret = OneToOneMatch(nID, fingernum, FPIMGLOCATION);
 	} while (ret == -8);
 
 	if(ret == 1)
