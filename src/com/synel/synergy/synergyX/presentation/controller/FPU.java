@@ -478,10 +478,13 @@ public final class FPU implements FingerPrintEnrollmentHandler, Runnable{
 	public static void main(String[] args) {
 		System.out.println("Java Lib Path is: "+System.getProperty("java.library.path")); //$NON-NLS-1$ //$NON-NLS-2$
 		FPU.openFPU("/tmp"); //invoke the help msg for this library
-		FPU.getInstance().REDOFF();
-		FPU.getInstance().GREENOFF();
+		FPU.getInstance();
+		FPU.REDOFF();
+		FPU.getInstance();
+		FPU.GREENOFF();
 		System.out.println("GREEN ON:"); //$NON-NLS-1$
-		FPU.getInstance().GREENON();
+		FPU.getInstance();
+		FPU.GREENON();
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
@@ -489,7 +492,8 @@ public final class FPU implements FingerPrintEnrollmentHandler, Runnable{
 			e.printStackTrace();
 		}
 		System.out.println("RED OFF:"); //$NON-NLS-1$
-		FPU.getInstance().REDOFF();
+		FPU.getInstance();
+		FPU.REDOFF();
 		try {
 			Thread.sleep(1500);
 		} catch (InterruptedException e) {
@@ -497,7 +501,8 @@ public final class FPU implements FingerPrintEnrollmentHandler, Runnable{
 			e.printStackTrace();
 		}
 		System.out.println("GREEN OFF:"); //$NON-NLS-1$
-		FPU.getInstance().GREENOFF();
+		FPU.getInstance();
+		FPU.GREENOFF();
 
 		try {
 			Thread.sleep(3000);

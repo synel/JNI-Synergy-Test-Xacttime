@@ -17,7 +17,8 @@
 #include "SynergyUtility.h"
 #include "base64.h"
 #include <dirent.h>
-#include "com_synel_synergy_synergyX_presentation_controller_FPU.h"
+//#include "com_workbrain_clocks_wb8000_synergy_Synergy.h"
+#include "com_workbrain_clocks_wb8000_synergy_Synergy.h"
 /*
  * nPos is the array index in the fp memory
  * badgenum is the symbol in the fp data structure(FPINFO).
@@ -30,6 +31,7 @@
 #define JNI_TRUE   1
 #define FP_LIB_PATHNAME "/usr/lib/fpu/fp.so"
 #define FPIMGLOCATION "/tmp/zw.bmp"
+#define SUCCESS 0
 
 struct timeval tv1,tv2;
 static char templateLocation[128];
@@ -100,29 +102,29 @@ void JNI_OnUnload(JavaVM *vm, void *reserved)
 	//release all Global References, if any.
 }
 
-JNIEXPORT void JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_REDON(JNIEnv * env, jclass class){
+JNIEXPORT void JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_REDON(JNIEnv * env, jclass class){
 	DLOGI("RED LED On\n");
 	//set_gpio_value(pin, value);
 	set_gpio_value(1,1);
 }
 
-JNIEXPORT void JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_REDOFF(JNIEnv * env, jclass class){
+JNIEXPORT void JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_REDOFF(JNIEnv * env, jclass class){
 	DLOGI("RED LED Off\n");
 	set_gpio_value(1,0);
 }
 
-JNIEXPORT void JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_GREENON(JNIEnv * env, jclass class){
+JNIEXPORT void JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_GREENON(JNIEnv * env, jclass class){
 	DLOGI("GREEN LED On\n");
 	set_gpio_value(0,1);
 
 }
 
-JNIEXPORT void JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_GREENOFF(JNIEnv * env, jclass class){
+JNIEXPORT void JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_GREENOFF(JNIEnv * env, jclass class){
 	DLOGI("GREEN LED Off\n");
 	set_gpio_value(0,0);
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1OPENDEVICE
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1OPENDEVICE
 (JNIEnv *env, jclass jcls, jstring JtemplateLoc){
 	DLOGI("%s: called \n",__func__);
 	int nSensorType = 0x0;//0-3 is for smack bio etc. 0x33 is for suprema reader
@@ -162,14 +164,14 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	return ret;
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1CLOSEDEVICE
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1CLOSEDEVICE
 (JNIEnv *env, jclass jcls){
 	DLOGI("%s: called \n",__func__);
 	return (int)hlpClose();
 }
 
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1ENROLE_1EMPLOYEE
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1ENROLE_1EMPLOYEE
 (JNIEnv *env, jclass jcls,jstring badge, jint fingernum, jlong timeOut, jlong gapTime, jobject  enrollmentHandler ){
 	//static char fileName[35];
 	int nRet = 0;
@@ -222,10 +224,10 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	DLOGI("at line: %d\n",__LINE__);
 	DLOGI("return value: %d\n", retcode);
 
-	return retcode;
+	return (retcode == 1) ? SUCCESS : retcode;
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1VALIDATE_1EMPLOYEE
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1VALIDATE_1EMPLOYEE
 (JNIEnv *env, jclass jcls,jstring badge, jint fingernum, jlong timeOut ,jint isSpecialEnrolled){
 	DLOGI("%s: called \n",__func__);
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, badge, 0);
@@ -261,40 +263,25 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	if(ret == 1)
 	{
 		printf("OneToOneMatch : OK, found right finger print\n");
-		ret = 0; //zero mean return success
+		nRet = SUCCESS; //zero mean return success
 	} else {
 		DLOGI("OneToOneMatch: err code = %d\n", ret);
+		nRet = ret;
 		if(ret == -103)
 		{
 			DLOGI("there is no such finger print\n");
 		}
 	}
-	//	nRet = _validate_finger(timeOut);
-	//	//special enrollment case when no finger pressed
-	//	if(isSpecialEnrolled !=0 && nRet == -8){
-	//		return -999;
-	//	}
-	//
-	//	if(nRet !=0){
-	//		return nRet;
-	//	}
-	//
-	//	nRet = hlpVerify((long)badgeL, fingerNumber);
-	//	dwTotalTime += (DWORD)_tick_end();
-	//	if (nRet < 0){
-	//		return -104;
-	//	}
-
 	return nRet;
 }
 
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1DELETE_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingerNum ){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1DELETE_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingerNum ){
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	//static char fileName[35];
 	long badgeL = atol(nativeBadge);
 	long fingernum = (long)fingerNum;
-	long nRet = 0;
+	int nRet = 0;
 	char nID[64];
 	DWORD ID;
 	(*env)->ReleaseStringUTFChars(env, jbadge, nativeBadge);  // release resources
@@ -306,11 +293,12 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	sprintf(nID,"%ld",badgeL);
 
 	if (templateLocation != NULL) {
-		return hlpDeleteFlash(nID, fingernum, templateLocation);
+		nRet = hlpDeleteFlash(nID, fingernum, templateLocation);
 	}else {
-		return hlpDelete(nID, fingernum);
+		nRet = hlpDelete(nID, fingernum);
 	}
 
+	return (nRet == TRUE ? SUCCESS : nRet);
 	//	hlpSearchID((long*)&ID);
 	//	if( fingernum < 0){
 	//		if((nRet = hlpDeleteID(badgeL))< 0){
@@ -325,7 +313,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1DELETE_1TEMPLATE_1ALL(JNIEnv *env, jclass jcls){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1DELETE_1TEMPLATE_1ALL(JNIEnv *env, jclass jcls){
 	int nRet = 0;
 	if ((nRet = hlpDeleteAll()) < 0)
 	{
@@ -334,7 +322,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	return nRet;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1BADGES(JNIEnv *env, jclass jcls){
+JNIEXPORT jobjectArray JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1GET_1BADGES(JNIEnv *env, jclass jcls){
 	int i=0;
 	long idsLength = hlpGetEnrollCount();
 	DWORD* ids = NULL;
@@ -354,7 +342,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_synel_synergy_synergyX_presentation_cont
 	return badges;
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1BADGE_1STATUS(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1GET_1BADGE_1STATUS(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	long badgeL = atol(nativeBadge);
 	long fingerNumber = (long)fingernum;
@@ -367,7 +355,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1SET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum, jstring jtemplate ){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1SET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum, jstring jtemplate ){
 	//TODO: to be tested
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	const char *nativeTemplate = (*env)->GetStringUTFChars(env, jtemplate, 0);
@@ -385,7 +373,7 @@ JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_F
 	}
 }
 
-JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
+JNIEXPORT jstring JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1GET_1TEMPLATE(JNIEnv *env, jclass jcls,jstring jbadge, jint fingernum ){
 	const char *nativeBadge =(*env)->GetStringUTFChars(env, jbadge, 0);
 	long fingerNum = (long)fingernum;
 	unsigned char* template; //;= (unsigned char*)calloc(FPDATASIZE,sizeof(char));
@@ -402,11 +390,11 @@ JNIEXPORT jstring JNICALL Java_com_synel_synergy_synergyX_presentation_controlle
 	return (*env)->NewStringUTF(env, NULL);
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1GET_1ENROLECOUNT(JNIEnv *env, jclass jcls){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1GET_1ENROLECOUNT(JNIEnv *env, jclass jcls){
 	return (int)hlpGetEnrollCount();
 }
 
-JNIEXPORT jint JNICALL Java_com_synel_synergy_synergyX_presentation_controller_FPU_FP_1IDENTIFY_1EMPLOYEE(JNIEnv *env,jclass jcls){
+JNIEXPORT jint JNICALL Java_com_workbrain_clocks_wb8000_synergy_Synergy_FP_1IDENTIFY_1EMPLOYEE(JNIEnv *env,jclass jcls){
 	int nRet;
 	DWORD ID, FingerNum;
 
